@@ -5,6 +5,7 @@
 #define SNAKE_SIZE 20
 #define SNAKE_PAD 3
 #define TICK_SPEED 0.5
+#define CELL_SIZE (SNAKE_SIZE + SNAKE_PAD)
 
 typedef enum {
     Up,
@@ -26,6 +27,18 @@ void snake_update_body(Cell snake_pos[], size_t length) {
     }
 }
 
+bool snake_check_collision(Cell snake_pos[], size_t length) {
+    int head_x = snake_pos[0].col;
+    int head_y = snake_pos[0].row;
+    for (size_t i = 1; i < length; i++) {
+        if (snake_pos[i].row == head_y && snake_pos[i].col == head_x) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 int modulo(int a, int b) {
     return (a % b + b) % b;
 }
@@ -34,18 +47,20 @@ int modulo(int a, int b) {
 int main() {
     InitWindow(800, 600, "Snake");
     
-    int width = GetScreenWidth() / (SNAKE_SIZE + SNAKE_PAD);
-    int height = GetScreenHeight() / (SNAKE_SIZE + SNAKE_PAD);
+    int width = GetScreenWidth() / CELL_SIZE;
+    int height = GetScreenHeight() / CELL_SIZE;
     SetTargetFPS(60);
 
-    size_t length = 4;
+    size_t snake_length = 5;
     Cell snake_pos[] = {
         (Cell){ width/2, height/2 },
         (Cell){ width/2, height/2 + 1 },
         (Cell){ width/2, height/2 + 2 },
-        (Cell){ width/2, height/2 + 3 }
+        (Cell){ width/2, height/2 + 3 },
+        (Cell){ width/2, height/2 + 4 }
     };
 
+    bool over = false;
     float elapsed = 0;
     Direction current_dir = Up;
     while (!WindowShouldClose()) {
@@ -54,16 +69,24 @@ int main() {
 
         BeginDrawing();
         ClearBackground(BLACK);
-        for (size_t i = 0; i < length; i++) {
-            DrawText(TextFormat("%zu: %d %d", i, snake_pos[i].col, snake_pos[i].row), 0, i*(SNAKE_SIZE+SNAKE_PAD), 25, WHITE);
-            Color color = (i == 0)? RED: GREEN;
-            Vector2 pos = (Vector2){ snake_pos[i].col * (SNAKE_SIZE + SNAKE_PAD), snake_pos[i].row * (SNAKE_SIZE + SNAKE_PAD) };
-            DrawRectangleV(pos, (Vector2){SNAKE_SIZE, SNAKE_SIZE}, color);
+
+        if (!over) {
+            for (size_t i = 0; i < snake_length; i++) {
+                DrawText(TextFormat("%zu: %d %d", i, snake_pos[i].col, snake_pos[i].row), 0, i*CELL_SIZE, 25, WHITE);
+                Color color = (i == 0)? RED: GREEN;
+                Vector2 pos = (Vector2){ snake_pos[i].col * CELL_SIZE, snake_pos[i].row * CELL_SIZE };
+                DrawRectangleV(pos, (Vector2){SNAKE_SIZE, SNAKE_SIZE}, color);
+            }
+        } else {
+            char *text = "Game Over";
+            int font_size = 50;
+            Vector2 text_size = MeasureTextEx(GetFontDefault(), text, font_size, 1);
+            DrawText(text, (GetScreenWidth() - text_size.x)/2, (GetScreenHeight() - text_size.y)/2, font_size, WHITE);
         }
         
         if (elapsed >= TICK_SPEED) { 
             elapsed = 0;
-            snake_update_body(snake_pos, length);
+            snake_update_body(snake_pos, snake_length);
             switch (current_dir) {
                 case Up:
                     snake_pos[0].row -= 1;
@@ -80,6 +103,11 @@ int main() {
             }
             snake_pos[0].row = modulo(snake_pos[0].row, height);
             snake_pos[0].col = modulo(snake_pos[0].col, width);
+
+            if (snake_check_collision(snake_pos, snake_length)) {
+                over = true;
+            }
+
         }
 
 
