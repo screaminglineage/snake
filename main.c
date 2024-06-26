@@ -14,28 +14,36 @@ typedef enum {
 } Direction;
 
 
+typedef struct {
+    int row;
+    int col;
+} Cell;
 
 
-void snake_update_body(Vector2 snake_pos[], size_t length) {
+void snake_update_body(Cell snake_pos[], size_t length) {
     for (size_t i = length - 1; i >= 1; i--) {
         snake_pos[i] = snake_pos[i-1];
     }
+}
+
+int modulo(int a, int b) {
+    return (a % b + b) % b;
 }
 
 
 int main() {
     InitWindow(800, 600, "Snake");
     
-    int width = GetScreenWidth();
-    int height = GetScreenHeight();
+    int width = GetScreenWidth() / (SNAKE_SIZE + SNAKE_PAD);
+    int height = GetScreenHeight() / (SNAKE_SIZE + SNAKE_PAD);
     SetTargetFPS(60);
 
     size_t length = 4;
-    Vector2 snake_pos[] = {
-        (Vector2){ width/2, height/2 },
-        (Vector2){ width/2, height/2 + SNAKE_SIZE + SNAKE_PAD },
-        (Vector2){ width/2, height/2 + 2*(SNAKE_SIZE + SNAKE_PAD) },
-        (Vector2){ width/2, height/2 + 3*(SNAKE_SIZE + SNAKE_PAD) },
+    Cell snake_pos[] = {
+        (Cell){ width/2, height/2 },
+        (Cell){ width/2, height/2 + 1 },
+        (Cell){ width/2, height/2 + 2 },
+        (Cell){ width/2, height/2 + 3 }
     };
 
     float elapsed = 0;
@@ -47,41 +55,31 @@ int main() {
         BeginDrawing();
         ClearBackground(BLACK);
         for (size_t i = 0; i < length; i++) {
-            DrawText(TextFormat("%zu: %.2f %.2f", i, snake_pos[i].x, snake_pos[i].y), 0, i*(SNAKE_SIZE+SNAKE_PAD), 25, WHITE);
+            DrawText(TextFormat("%zu: %d %d", i, snake_pos[i].col, snake_pos[i].row), 0, i*(SNAKE_SIZE+SNAKE_PAD), 25, WHITE);
             Color color = (i == 0)? RED: GREEN;
-            DrawRectangleV(snake_pos[i], (Vector2){SNAKE_SIZE, SNAKE_SIZE}, color);
+            Vector2 pos = (Vector2){ snake_pos[i].col * (SNAKE_SIZE + SNAKE_PAD), snake_pos[i].row * (SNAKE_SIZE + SNAKE_PAD) };
+            DrawRectangleV(pos, (Vector2){SNAKE_SIZE, SNAKE_SIZE}, color);
         }
-
-        if (snake_pos[0].x < 0) {
-            snake_pos[0].x = width + snake_pos[0].x; 
-        }
-        if (snake_pos[0].x >= width) {
-            snake_pos[0].x = snake_pos[0].x - width; 
-        }
-        if (snake_pos[0].y < 0) {
-            snake_pos[0].y = height + snake_pos[0].y; 
-        } 
-        if (snake_pos[0].y >= height) {
-            snake_pos[0].y = snake_pos[0].y - height; 
-        }
-
+        
         if (elapsed >= TICK_SPEED) { 
             elapsed = 0;
             snake_update_body(snake_pos, length);
             switch (current_dir) {
                 case Up:
-                    snake_pos[0].y -= (SNAKE_SIZE + SNAKE_PAD);
+                    snake_pos[0].row -= 1;
                     break;
                 case Down:
-                    snake_pos[0].y += (SNAKE_SIZE + SNAKE_PAD);
+                    snake_pos[0].row += 1;
                     break;
                 case Left:
-                    snake_pos[0].x -= (SNAKE_SIZE + SNAKE_PAD);
+                    snake_pos[0].col -= 1;
                     break;
                 case Right:
-                    snake_pos[0].x += (SNAKE_SIZE + SNAKE_PAD);
+                    snake_pos[0].col += 1;
                     break;
             }
+            snake_pos[0].row = modulo(snake_pos[0].row, height);
+            snake_pos[0].col = modulo(snake_pos[0].col, width);
         }
 
 
